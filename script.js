@@ -3416,12 +3416,12 @@ async function updateDevice() {
 
         // Passo 3: seleciona novamente a porta (agora deve estar em bootloader)
         const bootloaderPort = await navigator.serial.requestPort();
-        await bootloaderPort.open({ dataBits: 8,
-                                    stopBits: 1,
-                                    parity: 'none',
-                                    bufferSize: 63,
-                                    flowControl: 'hardware',
-                                    baudRate: 921600 });
+        //await bootloaderPort.open({ dataBits: 8,
+        //                            stopBits: 1,
+        //                            parity: 'none',
+        //                            bufferSize: 63,
+        //                            flowControl: 'hardware',
+        //                            baudRate: 921600 });
 
         // Passo 4: conecta com SamBA
         const logger = {
