@@ -3445,6 +3445,43 @@ async function updateDevice() {
         console.log("Firmware carregado:", firmwareBytes.length, "bytes");
 
         // Passo 7: flash
+        if (dev && samba && dev.flash) {
+            try {
+                const flasher = new Flasher(samba, dev.flash, {
+                    onStatus: (msg) => console.log("STATUS:", msg),
+                    onProgress: (page, total) => console.log(`Progresso: ${page}/${total}`)
+                    //onProgress: (addr, size) => console.log(`Escrevendo página no endereço 0x${addr.toString(16)}, tamanho ${size}`)
+                });
+
+                const offset = 0x2000;
+
+                console.log("Page size:", dev.flash.pageSize);
+                //console.log("Offset 0x2000 % pageSize =", 0x2000 % dev.flash.pageSize);
+
+                //await flasher.erase(offset);
+                await flasher.write(firmwareBytes, offset);
+
+                console.log("Firmware gravado com sucesso!");
+
+                // Tenta resetar o device
+                try {
+                    if (dev.reset) {
+                        await dev.reset();
+                        console.log("Device resetado.");
+                    }
+                } catch (resetErr) {
+                    console.warn("Falha ao resetar, pode ser normal:", resetErr);
+                }
+
+                Swal.fire("Success", "Device updated successfully!", "success");
+
+            } catch (flashErr) {
+                console.error("Erro ao gravar firmware:", flashErr);
+                Swal.fire("Error", "Falha no processo de flash: " + flashErr.message, "error");
+            }
+        } else {
+            Swal.fire("Error", "Device ou flash não inicializados.", "error");
+        }
         
         
         /*Swal.fire("Success", "Device updated successfully!", "success");*/
