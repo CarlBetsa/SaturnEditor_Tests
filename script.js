@@ -3438,7 +3438,7 @@ async function updateDevice() {
         console.log("Flash info:", dev.flash);
 
         // Passo 6: baixa o firmware
-        const response = await fetch("https://editor.saturnopedais.com.br/bins/CarlB Sotela HEX.hex");
+        const response = await fetch("https://editor.saturnopedais.com.br/bins/CarlB_Sotela_HEX.hex");
         const firmwareArrayBuffer = await response.arrayBuffer();
         const firmwareBytes = new Uint8Array(firmwareArrayBuffer);
 
