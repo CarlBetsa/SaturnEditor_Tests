@@ -3438,7 +3438,7 @@ async function updateDevice() {
         console.log("Flash info:", dev.flash);
 
         // Passo 6: baixa o firmware
-        const response = await fetch("https://editor.saturnopedais.com.br/bins/TimeSpaceTela.bin");
+        const response = await fetch("https://editor.saturnopedais.com.br/bins/CarlB Sotela HEX.hex");
         const firmwareArrayBuffer = await response.arrayBuffer();
         const firmwareBytes = new Uint8Array(firmwareArrayBuffer);
 
