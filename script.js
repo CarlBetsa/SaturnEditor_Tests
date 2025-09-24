@@ -3416,12 +3416,6 @@ async function updateDevice() {
 
         // Passo 3: seleciona novamente a porta (agora deve estar em bootloader)
         const bootloaderPort = await navigator.serial.requestPort();
-        //await bootloaderPort.open({ dataBits: 8,
-        //                            stopBits: 1,
-        //                            parity: 'none',
-        //                            bufferSize: 63,
-        //                            flowControl: 'hardware',
-        //                            baudRate: 921600 });
 
         // Passo 4: conecta com SamBA
         const logger = {
@@ -3459,7 +3453,7 @@ async function updateDevice() {
                     //onProgress: (addr, size) => console.log(`Escrevendo página no endereço 0x${addr.toString(16)}, tamanho ${size}`)
                 });
 
-                const offset = 0x2000;
+                const offset = 0;
 
                 console.log("Page size:", dev.flash.pageSize);
                 //console.log("Offset 0x2000 % pageSize =", 0x2000 % dev.flash.pageSize);
