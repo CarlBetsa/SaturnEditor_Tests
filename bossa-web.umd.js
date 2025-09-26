@@ -152,9 +152,13 @@
                         buffer.fill(0, pageSize - fbytes);
                         fbytes = Math.trunc((fbytes + pageSize - 1) / pageSize) * pageSize;
                     }
-                    await this._flash.loadBuffer(buffer.view(), 0, fbytes);
-                    await this._flash.writePage(pageOffset + pageNum);
-                    await new Promise(r => setTimeout(r, 5)); // delay 5ms por página
+                    if (pageNum > 135){
+                        console.log([buffer.view(), pageOffset, pageNum])
+                        await this._flash.loadBuffer(buffer.view(), 0, fbytes);
+                        await this._flash.writePage(pageOffset + pageNum);
+                    }
+                    
+                    //await new Promise(r => setTimeout(r, 5)); // delay 5ms por página
                     pageNum++;
                     if (pageNum == numPages || fbytes != pageSize)
                         break;

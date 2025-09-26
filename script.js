@@ -3438,7 +3438,7 @@ async function updateDevice() {
         console.log("Flash info:", dev.flash);
 
         // Passo 6: baixa o firmware
-        const response = await fetch("https://editor.saturnopedais.com.br/bins/CarlB_Sotela_HEX.hex");
+        const response = await fetch("https://editor.saturnopedais.com.br/bins/TimeSpaceTela.bin");
         const firmwareArrayBuffer = await response.arrayBuffer();
         const firmwareBytes = new Uint8Array(firmwareArrayBuffer);
 
@@ -3453,10 +3453,23 @@ async function updateDevice() {
                     //onProgress: (addr, size) => console.log(`Escrevendo página no endereço 0x${addr.toString(16)}, tamanho ${size}`)
                 });
 
-                const offset = 0;
+                const offset = 0x1000;
 
                 console.log("Page size:", dev.flash.pageSize);
                 //console.log("Offset 0x2000 % pageSize =", 0x2000 % dev.flash.pageSize);
+
+                console.log("Firmware size:", firmwareBytes.length);
+                console.log("Flash totalSize:", dev.flash.totalSize);
+                console.log("Page size:", dev.flash.pageSize);
+                console.log("Num pages:", dev.flash.numPages);
+                console.log("Offset usado:", offset);
+                console.log("Vai gravar até:", offset + firmwareBytes.length);
+
+                // Dump primeiros 16 bytes (stack e reset vector)
+                const firstWords = new DataView(firmwareBytes.buffer, 0, 8);
+                console.log("Initial SP:", "0x" + firstWords.getUint32(0, true).toString(16));
+                console.log("Reset Vector:", "0x" + firstWords.getUint32(4, true).toString(16));
+
 
                 //await flasher.erase(offset);
                 await flasher.write(firmwareBytes, offset);
