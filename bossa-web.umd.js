@@ -152,8 +152,8 @@
                         buffer.fill(0, pageSize - fbytes);
                         fbytes = Math.trunc((fbytes + pageSize - 1) / pageSize) * pageSize;
                     }
-                    if (pageNum > 135){
-                        console.log([buffer.view(), pageOffset, pageNum])
+                    if (pageNum > -1){
+                        console.log(buffer.view())
                         await this._flash.loadBuffer(buffer.view(), 0, fbytes);
                         await this._flash.writePage(pageOffset + pageNum);
                     }
@@ -394,6 +394,7 @@
             if (this.options.debug)
                 this.options.logger.debug('readWord(addr=0x', this.hex(addr), ')');
             let result = await this.sendCommand('w' + this.hex(addr) + ',4', 4);
+            console.log(`ReadWord: ${result}`); //aqui deve ser um array de 4 porem estou recebendo um de 2
             if (result) {
                 let value = (result[3] << 24 | result[2] << 16 | result[1] << 8 | result[0] << 0);
                 if (this.options.debug)
@@ -1036,6 +1037,11 @@
                 throw new FlashPageError$1();
             }
             // Disable cache and configure manual page write
+            /*if (page <= 206){
+                console.log("Aqui vai dar o erro no 142")
+                console.log(`NVM_REG_CTRLB$1: ${NVM_REG_CTRLB$1}`)
+                console.log(`(0x1 << 18) | (0x1 << 7): ${(0x1 << 18) | (0x1 << 7)}`)
+            } */
             await this.writeReg(NVM_REG_CTRLB$1, (await this.readReg(NVM_REG_CTRLB$1)) | (0x1 << 18) | (0x1 << 7));
             // Auto-erase if writing at the start of the erase page
             if (this.eraseAuto && page % ERASE_ROW_PAGES == 0)

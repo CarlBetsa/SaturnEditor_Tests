@@ -3429,87 +3429,79 @@ async function updateDevice() {
         });
 
         await samba.connect(1000);
+        console.log("Conectado ao SAM-BA:", samba.info);
 
-        // ✅ Mostra versão do bootloader
-        const version = await samba.readVersion();
-        console.log("Bootloader version:", version);
-
-        // ✅ Cria o device
+        // Passo 5: cria o device
         const dev = new Device(samba);
         await dev.create();
 
-        // ✅ Corrige informações do chip, se não vierem preenchidas
-        try {
-            if (!dev.cpu || dev.cpu === "undefined") {
-                const CHIP_ID_ADDR = 0x41002018;
-                const chipId = await samba.readWord(CHIP_ID_ADDR);
-                console.log("Chip ID lido:", "0x" + chipId.toString(16));
+        console.log("Conectado ao bootloader SAM-BA");
+        console.log("CPU:", dev.cpu);
+        console.log("Flash info:", dev.flash);
 
-                // Detecta modelo SAMD21
-                if (chipId === 0x10010305) {
-                    dev.cpu = "ATSAMD21G18A";
-                    dev.flash._name = "ATSAMD21x18";
-                    dev.flash._pages = 4096;
-                    dev.flash._size = 64;
-                    dev.flash._planes = 1;
-                    dev.flash.totalSize = 262144; // 256 KB
-                    dev.flash.pageSize = 64;
-                    dev.flash.numPages = 4096;
-                    console.log("Chip identificado como ATSAMD21G18A");
-                } else {
-                    console.warn("Chip ID desconhecido:", chipId.toString(16));
-                }
-            }
+        console.log("Conectado ao bootloader:", dev);
+        console.log("Flash info:", dev.flash);
 
-            console.log("CPU:", dev.cpu);
-            console.log("Flash info:", dev.flash);
-
-        } catch (chipErr) {
-            console.warn("Falha ao ler Chip ID:", chipErr);
-        }
-
-        // ✅ Baixa o firmware
-        const response = await fetch("https://editor.saturnopedais.com.br/bins/TimeSpaceTela.bin");
+        // Passo 6: baixa o firmware
+        const response = await fetch("https://editor.saturnopedais.com.br/bins/TitanSLIMCODE.bin");
         const firmwareArrayBuffer = await response.arrayBuffer();
         const firmwareBytes = new Uint8Array(firmwareArrayBuffer);
 
         console.log("Firmware carregado:", firmwareBytes.length, "bytes");
 
-        // ✅ Cria o Flasher apenas após confirmação do chip
-        const flasher = new Flasher(samba, dev.flash, {
-            onStatus: (msg) => console.log("STATUS:", msg),
-            onProgress: (page, total) => console.log(`Progresso: ${page}/${total}`)
-        });
+        // Passo 7: flash
+        if (dev && samba && dev.flash) {
+            try {
+                const flasher = new Flasher(samba, dev.flash, {
+                    onStatus: (msg) => console.log("STATUS:", msg),
+                    onProgress: (page, total) => console.log(`Progresso: ${page}/${total}`)
+                    //onProgress: (addr, size) => console.log(`Escrevendo página no endereço 0x${addr.toString(16)}, tamanho ${size}`)
+                });
 
-        // ⚠️ Escolha o offset certo conforme seu firmware
-        const offset = 0x1000; // 0x0000 se o firmware for compilado sem bootloader
-        // const offset = 0x2000; // use 0x2000 se for compilado para rodar após bootloader
+                const offset = 0x1000;
 
-        console.log("Offset usado:", offset.toString(16));
+                console.log("Page size:", dev.flash.pageSize);
+                //console.log("Offset 0x2000 % pageSize =", 0x2000 % dev.flash.pageSize);
 
-        // ✅ Mostra o Reset Vector pra confirmar
-        const view = new DataView(firmwareBytes.buffer, 0, 8);
-        const initialSP = view.getUint32(0, true);
-        const resetVector = view.getUint32(4, true);
-        console.log("Initial SP:", "0x" + initialSP.toString(16));
-        console.log("Reset Vector:", "0x" + resetVector.toString(16));
+                console.log("Firmware size:", firmwareBytes.length);
+                console.log("Flash totalSize:", dev.flash.totalSize);
+                console.log("Page size:", dev.flash.pageSize);
+                console.log("Num pages:", dev.flash.numPages);
+                console.log("Offset usado:", offset);
+                console.log("Vai gravar até:", offset + firmwareBytes.length);
 
-        // ✅ Faz a gravação
-        try {
-            console.log("Page size:", dev.flash.pageSize);
-            await flasher.write(firmwareBytes, offset);
-            console.log("✅ Firmware gravado com sucesso!");
+                // Dump primeiros 16 bytes (stack e reset vector)
+                const firstWords = new DataView(firmwareBytes.buffer, 0, 8);
+                console.log("Initial SP:", "0x" + firstWords.getUint32(0, true).toString(16));
+                console.log("Reset Vector:", "0x" + firstWords.getUint32(4, true).toString(16));
 
-            if (dev.reset) {
-                await dev.reset();
-                console.log("Device resetado.");
+
+                //await flasher.erase(offset);
+                await flasher.write(firmwareBytes, offset);
+
+                console.log("Firmware gravado com sucesso!");
+
+                // Tenta resetar o device
+                try {
+                    if (dev.reset) {
+                        await dev.reset();
+                        console.log("Device resetado.");
+                    }
+                } catch (resetErr) {
+                    console.warn("Falha ao resetar, pode ser normal:", resetErr);
+                }
+
+                Swal.fire("Success", "Device updated successfully!", "success");
+
+            } catch (flashErr) {
+                console.error("Erro ao gravar firmware:", flashErr);
+                Swal.fire("Error", "Falha no processo de flash: " + flashErr.message, "error");
             }
-
-            Swal.fire("Success", "Device updated successfully!", "success");
-        } catch (flashErr) {
-            console.error("Erro ao gravar firmware:", flashErr);
-            Swal.fire("Error", "Falha no processo de flash: " + flashErr.message, "error");
-        }       
+        } else {
+            Swal.fire("Error", "Device ou flash não inicializados.", "error");
+        }
+        
+        
         /*Swal.fire("Success", "Device updated successfully!", "success");*/
 
     } catch (err) {
