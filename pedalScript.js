@@ -300,7 +300,7 @@ async function createPresets() {
         mainContent.classList.remove("drag-over");
     });
 
-    mainContent .addEventListener("drop", async (e) => {
+    mainContent.addEventListener("drop", async (e) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -308,7 +308,21 @@ async function createPresets() {
 
         mainContent.classList.remove("drag-over");
 
-        // Redireciona para o drop do preset
+        // Tenta identificar se o arquivo arrastado é um backup
+        let isBackup = false;
+        try {
+            const jsonData = e.dataTransfer.getData('application/json');
+            if (jsonData) {
+                const byteArray = JSON.parse(jsonData);
+                const fileTypeFlag = byteArray[0];
+                if (fileTypeFlag === 103) isBackup = true;
+            }
+        } catch (err) {
+            console.warn("Falha ao ler tipo de arquivo no drop:", err);
+        }
+
+        if (!window.activePreset && !isBackup) return;
+
         const dropEvent = new DragEvent("drop", {
             dataTransfer: e.dataTransfer,
             bubbles: true,
@@ -628,12 +642,26 @@ async function createPresets() {
             }
         });
 
-        presetInput.addEventListener("input", function () {
-            const presetTitle = document.querySelector(".preset-title"); // Seleciona o título globalmente
+        presetInput.addEventListener("input", function (event) {
+            // Regex para limitar characteres
+            const allowedRegex = /^[A-Za-z0-9!"#$%&'*\+\-_.?@ ]*$/;
+            const currentValue = this.value;
+
+            // Se algum caractere inválido for digitado, remove-o
+            if (!allowedRegex.test(currentValue)) {
+                this.value = currentValue
+                    .split("")
+                    .filter(c => allowedRegex.test(c))
+                    .join("");
+            }
+
+            // Atualiza o título do preset se estiver selecionado
+            const presetTitle = document.querySelector(".preset-title");
             if (preset.classList.contains("selected")) {
                 if (this.value)
-                    presetTitle.textContent = `${presetNumber.textContent} | ${this.value}`
-                else presetTitle.textContent = this.placeholder;
+                    presetTitle.textContent = `${presetNumber.textContent} | ${this.value}`;
+                else
+                    presetTitle.textContent = this.placeholder;
             }
         });
 
@@ -642,16 +670,16 @@ async function createPresets() {
         });
         
         presetInput.addEventListener("blur", function () {
-            const asciiArray = [];
+            const valueArray = [];
             for (let i = 0; i < 8; i++) {
                 if (i < this.value.length) {
-                    asciiArray.push(this.value.charCodeAt(i));
+                    valueArray.push(charToSaturnValue(this.value[i]));
                 } else {
-                    asciiArray.push(32);
+                    valueArray.push(0); // completa com espaço (valor 0 ou 32? Não sei)
                 }
             }
-            sendMessage([0xF0, 0x07, ...asciiArray, 0xF7]);
-            //alert([this.value, window.originalPresetName])
+
+            sendMessage([0xF0, 0x07, ...valueArray, 0xF7]);
             if (this.value != window.originalPresetName){
                 patchChanged = true;
             }
@@ -818,6 +846,33 @@ async function createPresets() {
     }
 
     sendMessage([0xF0, 0x30, 0x00, 0xF7]);
+}
+
+function charToSaturnValue(char) {
+    if (char === ' ') return 0; // espaço
+
+    const code = char.charCodeAt(0);
+
+    // A-Z
+    if (code >= 65 && code <= 90) return code - 65 + 1;
+    // a-z
+    if (code >= 97 && code <= 122) return code - 97 + 27;
+    // 0-9
+    if (code >= 48 && code <= 57) return code - 48 + 53;
+    // ! " # $ % & '
+    if (code >= 33 && code <= 39) return code - 33 + 63;
+    // * +
+    if (code >= 42 && code <= 43) return code - 42 + 70;
+    // -
+    if (char === '-') return 72;
+    // _
+    if (char === '_') return 73;
+    // ? @
+    if (code >= 63 && code <= 64) return code - 63 + 74;
+    // .
+    if (char === '.') return 76;
+
+    return 0; // padrão: espaço se for caractere inválido
 }
 
 function reloadActivePreset() {

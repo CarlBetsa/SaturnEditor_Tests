@@ -63,12 +63,12 @@ let versions;
 let latestVersion;
 let ignorarDesconexao = false;
 let nomeControladora = "timespace"
-updateDevice()
+//updateDevice()
 
 // Função base da inicialização do site
 async function initializeSite() {
 
-    updateDevice()
+    //updateDevice()
 
     nomeControladora = null;
 
@@ -1847,7 +1847,12 @@ function fillMidiTable(values, tableId, saved) {
                         }
                         break;
                 }
-            } else detailButton.textContent = values[i + j + 1];  //voltar
+            } else {
+                const currentValue = values[i + j + 1];
+                if (currentValue === 128) detailButton.textContent = 'EXP1';
+                else if (currentValue === 129) detailButton.textContent = 'EXP2';
+                else detailButton.textContent = currentValue;
+            }
             detailButton.className = 'midi-detail';
             detailButton.style.cursor = 'pointer';
             detailButton.style.marginTop = '-5px';
@@ -2895,72 +2900,97 @@ function setupDragAndDrop() {
                 // Ordena alfabeticamente
                 fileNames.sort((a, b) => a.localeCompare(b));
 
-                fileNames.forEach(fileName => {
+                // Arrays separados por modelo
+                const timeSpaceFiles = [];
+                const spaceWalkFiles = [];
+
+                for (const fileName of fileNames) {
                     const fileUrl = `https://editor.saturnopedais.com.br/Sons_da_Saturno/${fileName}`;
+                    try {
+                        const fileResponse = await fetch(fileUrl);
+                        const content = await fileResponse.arrayBuffer();
+                        const byteArray = new Uint8Array(content);
 
-                    fetch(fileUrl)
-                        .then(response => response.arrayBuffer())
-                        .then(content => {
-                            const li = document.createElement('li');
-                            li.style.display = 'flex';
-                            li.style.justifyContent = 'space-between';
-                            li.style.alignItems = 'center';
-                            li.style.gap = '10px';
-                            li.style.minHeight = '23px';
+                        const fileTypeFlag = byteArray[0]; // 102 = preset, 103 = backup
+                        const fileModelFlag = byteArray[1]; // 100 = TimeSpace, 103 = SpaceWalk
 
-                            const byteArray = new Uint8Array(content);
-                            const fileTypeFlag = byteArray[0]; // 102 = preset, 103 = backup
-                            const archiveType = document.createElement('button');
-                            archiveType.textContent = fileTypeFlag === 103 ? 'BKP' : 'PRST';
-                            
-                            if (fileTypeFlag === 102) {
-                                const fileModelFlag = byteArray[1];
-                                archiveType.style.border = fileModelFlag === 1 ? "1px solid #ff3300ff" : `1px solid ${saveBlue}`;
-                                archiveType.style.color = fileModelFlag === 1 ? "#ff3300ff" : saveBlue;
-                            } else {
-                                archiveType.style.color = "silver";
-                                archiveType.style.border = "1px solid silver";
-                            }
+                        const li = document.createElement('li');
+                        li.style.display = 'flex';
+                        li.style.justifyContent = 'space-between';
+                        li.style.alignItems = 'center';
+                        li.style.gap = '10px';
+                        li.style.minHeight = '23px';
 
-                            archiveType.style.padding = "2px 6px";
-                            archiveType.style.fontSize = "10px";
-                            archiveType.style.borderRadius = "4px";
-                            archiveType.style.background = "transparent";
-                            archiveType.style.cursor = "default";
-                            archiveType.style.minWidth = "40px";
-                            archiveType.style.maxWidth = "40px";
+                        const archiveType = document.createElement('button');
+                        archiveType.textContent = fileTypeFlag === 103 ? 'BKP' : 'PRST';
 
-                            const link = document.createElement('a');
-                            link.title = fileName;
-                            const blob = new Blob([content], { type: 'text/plain' });
-                            const url = URL.createObjectURL(blob);
-                            link.href = url;
-                            link.download = fileName;
-                            link.textContent = fileName.replace(/\.(json|stnpreset)$/i, '');
-                            link.draggable = true;
+                        if (fileTypeFlag === 102) {
+                            archiveType.style.border = fileModelFlag === 103 ? "1px solid #ff3300ff" : `1px solid ${saveBlue}`;
+                            archiveType.style.color = fileModelFlag === 103 ? "#ff3300ff" : saveBlue;
+                        } else {
+                            archiveType.style.color = "silver";
+                            archiveType.style.border = "1px solid silver";
+                        }
 
-                            link.addEventListener('dragstart', (e) => {
-                                const base64 = arrayBufferToBase64(content);
-                                e.dataTransfer.setData('application/octet-stream', base64);
-                                e.dataTransfer.setData('text/plain', fileName);
-                                e.dataTransfer.setData('isSaturnRepo', 'true');
-                                e.dataTransfer.setData('size', content.byteLength.toString());
-                                e.dataTransfer.setData('application/json', JSON.stringify([...new Uint8Array(content)]));
-                                console.log(`Arquivo arrastado (${fileName}) com ${content.byteLength} bytes`);
-                            });
+                        archiveType.style.padding = "2px 6px";
+                        archiveType.style.fontSize = "10px";
+                        archiveType.style.borderRadius = "4px";
+                        archiveType.style.background = "transparent";
+                        archiveType.style.cursor = "default";
+                        archiveType.style.minWidth = "40px";
+                        archiveType.style.maxWidth = "40px";
 
-                            link.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                console.log("Arquivo lido", content);
-                            });
+                        const link = document.createElement('a');
+                        link.title = fileName;
+                        const blob = new Blob([content], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        link.href = url;
+                        link.download = fileName;
+                        link.textContent = fileName.replace(/\.(json|stnpreset)$/i, '');
+                        link.draggable = true;
 
-                            li.appendChild(archiveType);
-                            li.appendChild(link);
-                            repoList.appendChild(li);
-                        })
-                        .catch(() => console.error(`Falha ao carregar ${fileName}`));
-                });
+                        link.addEventListener('dragstart', (e) => {
+                            const base64 = arrayBufferToBase64(content);
+                            e.dataTransfer.setData('application/octet-stream', base64);
+                            e.dataTransfer.setData('text/plain', fileName);
+                            e.dataTransfer.setData('isSaturnRepo', 'true');
+                            e.dataTransfer.setData('size', content.byteLength.toString());
+                            e.dataTransfer.setData('application/json', JSON.stringify([...new Uint8Array(content)]));
+                            console.log(`Arquivo arrastado (${fileName}) com ${content.byteLength} bytes`);
+                        });
 
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            console.log("Arquivo lido", content);
+                        });
+
+                        li.appendChild(archiveType);
+                        li.appendChild(link);
+
+                        // Separa por modelo
+                        if (fileModelFlag === 100) {
+                            timeSpaceFiles.push({ name: fileName, element: li });
+                        } else if (fileModelFlag === 103) {
+                            spaceWalkFiles.push({ name: fileName, element: li });
+                        } else {
+                            // Fallback joga no grupo SpaceWalk
+                            spaceWalkFiles.push({ name: fileName, element: li });
+                        }
+
+                    } catch (err) {
+                        console.error(`Falha ao carregar ${fileName}`, err);
+                    }
+                }
+
+                // Ordena alfabeticamente cada modelo
+                timeSpaceFiles.sort((a, b) => a.name.localeCompare(b.name));
+                spaceWalkFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+                repoList.innerHTML = '';
+
+                spaceWalkFiles.forEach(file => repoList.appendChild(file.element));
+                timeSpaceFiles.forEach(file => repoList.appendChild(file.element));
+                
                 repoLoaded = true;
                 repoVisible = true;
                 repoList.style.display = 'block';
@@ -3365,6 +3395,9 @@ function generateBackup() {
 }
 
 async function updateDevice() {
+
+    notify ("Coming soon");
+    return;
     //if (!precisaAtualizar) return;
 
     const deviceNameFormatted = nomeControladora.charAt(0).toUpperCase() + nomeControladora.slice(1);
@@ -3416,6 +3449,12 @@ async function updateDevice() {
 
         // Passo 3: seleciona novamente a porta (agora deve estar em bootloader)
         const bootloaderPort = await navigator.serial.requestPort();
+        await bootloaderPort.open({ dataBits: 8,
+                                    stopBits: 1,
+                                    parity: 'none',
+                                    bufferSize: 63,
+                                    flowControl: 'hardware',
+                                    baudRate: 921600 });
 
         // Passo 4: conecta com SamBA
         const logger = {
@@ -3430,86 +3469,60 @@ async function updateDevice() {
 
         await samba.connect(1000);
 
-        // ✅ Mostra versão do bootloader
-        const version = await samba.readVersion();
-        console.log("Bootloader version:", version);
-
-        // ✅ Cria o device
+        // Passo 5: cria o device
         const dev = new Device(samba);
         await dev.create();
 
-        // ✅ Corrige informações do chip, se não vierem preenchidas
-        try {
-            if (!dev.cpu || dev.cpu === "undefined") {
-                const CHIP_ID_ADDR = 0x41002018;
-                const chipId = await samba.readWord(CHIP_ID_ADDR);
-                console.log("Chip ID lido:", "0x" + chipId.toString(16));
+        console.log("Conectado ao bootloader:", dev);
+        console.log("Flash info:", dev.flash);
 
-                // Detecta modelo SAMD21
-                if (chipId === 0x10010305) {
-                    dev.cpu = "ATSAMD21G18A";
-                    dev.flash._name = "ATSAMD21x18";
-                    dev.flash._pages = 4096;
-                    dev.flash._size = 64;
-                    dev.flash._planes = 1;
-                    dev.flash.totalSize = 262144; // 256 KB
-                    dev.flash.pageSize = 64;
-                    dev.flash.numPages = 4096;
-                    console.log("Chip identificado como ATSAMD21G18A");
-                } else {
-                    console.warn("Chip ID desconhecido:", chipId.toString(16));
-                }
-            }
-
-            console.log("CPU:", dev.cpu);
-            console.log("Flash info:", dev.flash);
-
-        } catch (chipErr) {
-            console.warn("Falha ao ler Chip ID:", chipErr);
-        }
-
-        // ✅ Baixa o firmware
+        // Passo 6: baixa o firmware
         const response = await fetch("https://editor.saturnopedais.com.br/bins/TimeSpaceTela.bin");
         const firmwareArrayBuffer = await response.arrayBuffer();
         const firmwareBytes = new Uint8Array(firmwareArrayBuffer);
 
         console.log("Firmware carregado:", firmwareBytes.length, "bytes");
 
-        // ✅ Cria o Flasher apenas após confirmação do chip
-        const flasher = new Flasher(samba, dev.flash, {
-            onStatus: (msg) => console.log("STATUS:", msg),
-            onProgress: (page, total) => console.log(`Progresso: ${page}/${total}`)
-        });
+        // Passo 7: flash
+        if (dev && samba && dev.flash) {
+            try {
+                const flasher = new Flasher(samba, dev.flash, {
+                    onStatus: (msg) => console.log("STATUS:", msg),
+                    onProgress: (page, total) => console.log(`Progresso: ${page}/${total}`)
+                    //onProgress: (addr, size) => console.log(`Escrevendo página no endereço 0x${addr.toString(16)}, tamanho ${size}`)
+                });
 
-        // ⚠️ Escolha o offset certo conforme seu firmware
-        const offset = 0x1000; // 0x0000 se o firmware for compilado sem bootloader
-        // const offset = 0x2000; // use 0x2000 se for compilado para rodar após bootloader
+                const offset = 0x2000;
 
-        console.log("Offset usado:", offset.toString(16));
+                console.log("Page size:", dev.flash.pageSize);
+                //console.log("Offset 0x2000 % pageSize =", 0x2000 % dev.flash.pageSize);
 
-        // ✅ Mostra o Reset Vector pra confirmar
-        const view = new DataView(firmwareBytes.buffer, 0, 8);
-        const initialSP = view.getUint32(0, true);
-        const resetVector = view.getUint32(4, true);
-        console.log("Initial SP:", "0x" + initialSP.toString(16));
-        console.log("Reset Vector:", "0x" + resetVector.toString(16));
+                //await flasher.erase(offset);
+                await flasher.write(firmwareBytes, offset);
 
-        // ✅ Faz a gravação
-        try {
-            console.log("Page size:", dev.flash.pageSize);
-            await flasher.write(firmwareBytes, offset);
-            console.log("✅ Firmware gravado com sucesso!");
+                console.log("Firmware gravado com sucesso!");
 
-            if (dev.reset) {
-                await dev.reset();
-                console.log("Device resetado.");
+                // Tenta resetar o device
+                try {
+                    if (dev.reset) {
+                        await dev.reset();
+                        console.log("Device resetado.");
+                    }
+                } catch (resetErr) {
+                    console.warn("Falha ao resetar, pode ser normal:", resetErr);
+                }
+
+                Swal.fire("Success", "Device updated successfully!", "success");
+
+            } catch (flashErr) {
+                console.error("Erro ao gravar firmware:", flashErr);
+                Swal.fire("Error", "Falha no processo de flash: " + flashErr.message, "error");
             }
-
-            Swal.fire("Success", "Device updated successfully!", "success");
-        } catch (flashErr) {
-            console.error("Erro ao gravar firmware:", flashErr);
-            Swal.fire("Error", "Falha no processo de flash: " + flashErr.message, "error");
-        }       
+        } else {
+            Swal.fire("Error", "Device ou flash não inicializados.", "error");
+        }
+        
+        
         /*Swal.fire("Success", "Device updated successfully!", "success");*/
 
     } catch (err) {
@@ -3822,13 +3835,13 @@ function createMidiPopup(midiButton, patchId, index, tableId) {
                 ];
                 
                 let results = novaOrdem.map(index => midiValues2[index]);
-
+                //console.log(`pre ${[...results]}`)
                 for (let i = 0; i < 10; i++) {
                     results[i*3+2]=results[i*3+2]+((results[i*3+0]&0b10000000)>>3)+((results[i*3+1]&0b10000000)>>2)
                     results[i*3+0]=results[i*3+0]&0b01111111
                     results[i*3+1]=results[i*3+1]&0b01111111
                 }
-
+                //console.log(`after ${[...results]}`)
                 //alert([...results])
 
                 //alert([0xF0, 0x0E, tableAux, selectedButtonIndices[midiTable.id], ...results, 0xF7])
@@ -3917,12 +3930,13 @@ function createMidiPopup(midiButton, patchId, index, tableId) {
                 ];
                 
                 const results = novaOrdem.map(index => midiValues2[index]);
+                //console.log([...results])
                 for (let i = 0; i < 10; i++) {
                     results[i*3+2]=results[i*3+2]+((results[i*3+0]&0b10000000)>>3)+((results[i*3+1]&0b10000000)>>2)
                     results[i*3+0]=results[i*3+0]&0b01111111
                     results[i*3+1]=results[i*3+1]&0b01111111
                 }
-                //alert([...results])
+                //console.log([...results])
                 // Envia os valores da tabela específica
                 sendMessage([0xF0, 0x0E, tableAux, selectedButtonIndices[midiTable.id], ...results, 0xF7]);
             });
@@ -4159,11 +4173,13 @@ function createValuePopup(detailButton, rangeStart, rangeEnd, onSelectCallback) 
             ];
             
             const results = novaOrdem.map(index => midiValues2[index]);
+            //console.log(`pre ${[...results]}`)
             for (let i = 0; i < 10; i++) {
                 results[i*3+2]=results[i*3+2]+((results[i*3+0]&0b10000000)>>3)+((results[i*3+1]&0b10000000)>>2)
                 results[i*3+0]=results[i*3+0]&0b01111111
                 results[i*3+1]=results[i*3+1]&0b01111111
             }
+            //console.log(`after ${[...results]}`)
             //alert([...results])
             // Envia os valores da tabela específica
             sendMessage([0xF0, 0x0E, tableAux, selectedButtonIndices[midiTable.id], ...results, 0xF7]);
@@ -4304,12 +4320,14 @@ function createValuePopup(detailButton, rangeStart, rangeEnd, onSelectCallback) 
             ];
     
             const results = novaOrdem.map(index => midiValues2[index]);
+            //console.log(`pre ${[...results]}`)
             //alert([...results])
             for (let i = 0; i < 10; i++) {
                 results[i * 3 + 2] = results[i * 3 + 2] + ((results[i * 3 + 0] & 0b10000000) >> 3) + ((results[i * 3 + 1] & 0b10000000) >> 2);
                 results[i * 3 + 0] = results[i * 3 + 0] & 0b01111111;
                 results[i * 3 + 1] = results[i * 3 + 1] & 0b01111111;
             }
+            //console.log(`after ${[...results]}`)
             //alert([...results]);
             
             // Envia os valores da tabela específica
@@ -4403,11 +4421,13 @@ function createValuePopup(detailButton, rangeStart, rangeEnd, onSelectCallback) 
                 ];
                 
                 const results = novaOrdem.map(index => midiValues2[index]);
+                //console.log(`pre ${[...results]}`)
                 for (let i = 0; i < 10; i++) {
                     results[i*3+2]=results[i*3+2]+((results[i*3+0]&0b10000000)>>3)+((results[i*3+1]&0b10000000)>>2)
                     results[i*3+0]=results[i*3+0]&0b01111111
                     results[i*3+1]=results[i*3+1]&0b01111111
                 }
+                //console.log(`after ${[...results]}`)
                 //alert([...results])
                 // Envia os valores da tabela específica
                 sendMessage([0xF0, 0x0E, tableAux, selectedButtonIndices[midiTable.id], ...results, 0xF7]);
