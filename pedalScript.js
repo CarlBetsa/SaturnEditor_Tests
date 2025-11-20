@@ -742,8 +742,8 @@ async function createPresets() {
                     else originalArray = Uint8Array.from([...decoded.slice(0, -1), 0]);
 
                     //alert([...byteArray]);     // correto
-                    alert([...originalArray]); // também correto
-                    alert([...decoded]);     // idem
+                    //alert([...originalArray]); // também correto
+                    //alert([...decoded]);     // idem
                     //alert(originalArray.length);
                     //alert(decoded.length);
                 } else {
