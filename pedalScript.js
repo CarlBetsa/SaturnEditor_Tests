@@ -11,7 +11,7 @@ const algorithmData = {
     "Holo Filter": ["Type", "Ressonance", "Tone", "Envelope", "Sensitivity/Range", "Response/Rate"],
     "RetroVerse": ["Sensitivity", "Release"],
     "Memory Man": ["Tone", "Compression", "Grit", "Mod Type ", "Modulation", "Ducking"],
-    "Nebula Swell": ["Sensitivity", "Responce"],
+    "Nebula Swell": ["Sensitivity", "Response"],
     "WhammyDelay": ["Heel", "Toe", "Tone", "Mode ", "Speed"]
 };
 
@@ -24,7 +24,7 @@ const algorithmDataSpacewalk = {
     "Dark Galaxy": ["Fundamental", "Harmonics", "Regeneration", "Tone"],
     "Sci-fi Shimmer": ["Fundamental", "Harmonics", "Regeneration", "Tone"],
     "Frosted Verb": ["Mode   ", "Velocity", "Modulation", "Harmonics"],
-    "Spatial Vowels": ["Home Vowel", "Target Vowel", "Resonance", "Sensitivity", "Responce"],
+    "Spatial Vowels": ["Home Vowel", "Target Vowel", "Resonance", "Sensitivity", "Response"],
     "Stellar Swell": ["Sensitivity", "Response"]
 };
 
@@ -97,7 +97,7 @@ const parameterRanges = {
     "Response/Rate": { tipo: "porcentagem", valor_inicial: 0, valor_final: 100, complemento: "%" },
     "Sensitivity": { tipo: "porcentagem", valor_inicial: 0, valor_final: 100, complemento: "%" },
     "Release": { tipo: "porcentagem", valor_inicial: 0, valor_final: 100, complemento: "%" },
-    "Responce": { tipo: "porcentagem", valor_inicial: 0, valor_final: 100, complemento: "%" },
+    "Response": { tipo: "porcentagem", valor_inicial: 0, valor_final: 100, complemento: "%" },
     "Heel": {
         tipo: "lista", valores: [-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5,
             6, 7, 8, 9, 10, 11, 12], complemento: ""
@@ -670,16 +670,16 @@ async function createPresets() {
         });
         
         presetInput.addEventListener("blur", function () {
-            const valueArray = [];
+            const asciiArray = [];
             for (let i = 0; i < 8; i++) {
                 if (i < this.value.length) {
-                    valueArray.push(charToSaturnValue(this.value[i]));
+                    asciiArray.push(this.value.charCodeAt(i));
                 } else {
-                    valueArray.push(0); // completa com espaço (valor 0 ou 32? Não sei)
+                    asciiArray.push(32);
                 }
             }
-
-            sendMessage([0xF0, 0x07, ...valueArray, 0xF7]);
+            sendMessage([0xF0, 0x07, ...asciiArray, 0xF7]);
+            //alert([this.value, window.originalPresetName])
             if (this.value != window.originalPresetName){
                 patchChanged = true;
             }
@@ -737,18 +737,23 @@ async function createPresets() {
                     const decoded = decode(fullArray.slice(1));
 
                     // Cria originalArray com +0 no final
-                    originalArray = Uint8Array.from([...decoded, 0]);
+                    if (decoded.length == 152)
+                        originalArray = Uint8Array.from([...decoded, 0]);
+                    else originalArray = Uint8Array.from([...decoded.slice(0, -1), 0]);
 
                     //alert([...byteArray]);     // correto
-                    //alert([...originalArray]); // também correto
-                    //alert([...fullArray]);     // idem
+                    alert([...originalArray]); // também correto
+                    alert([...decoded]);     // idem
                     //alert(originalArray.length);
+                    //alert(decoded.length);
                 } else {
                     const parsed = JSON.parse(content);
                     const fullArray = new Uint8Array(parsed);
                     isBackup = parsed[0]
                     //alert(isBackup)
                     originalArray = decode(fullArray.slice(1));
+                    //alert([...fullArray])
+                    //alert([...originalArray]);
                 }
 
                 // Verifica a compatibilidade do arquivo
@@ -893,7 +898,7 @@ function extractPresets(data) {
     //alert(data)
     if (data.length !== 33) {
         console.error("O array não possui 33 elementos");
-        return;
+        //return;
     }
 
     let index = data[0];

@@ -997,7 +997,7 @@ async function sendMessage(message) {
 
         output.send(message); 
     } catch (error) {
-        alert("Erro ao enviar mensagem MIDI: " + error);
+        console.log("Erro ao enviar mensagem MIDI: " + error);
     }
 }
 
@@ -1032,7 +1032,7 @@ async function patchChange(letter, j) {
         sendMessage([0xF0,0x09,valorASCII - 65,j,0xF7]); // Muda patch
         //alert([0xF0,0x09,valorASCII - 65,j,0xF7])
     } catch (error) {
-        alert("Erro ao enviar mensagem MIDI: " + error);
+        console.log("Erro ao enviar mensagem MIDI: " + error);
     }
 }
     //'https://editor.saturnopedais.com.br/Sons_da_Saturno/fileList.json'
@@ -2798,7 +2798,7 @@ async function heartBeat() {
         output.send([0xF0, 0x08, 0x00, 0xF7]);
         console.log('heartbeat');
     } catch (error) {
-        alert("Erro ao enviar mensagem MIDI: " + error);
+        console.log("Erro ao enviar mensagem MIDI: " + error);
     } finally {
         isExecuting = false;
     }
