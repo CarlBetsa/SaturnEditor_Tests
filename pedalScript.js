@@ -1953,6 +1953,19 @@ function createIndividualTable(number, currentAlgorithmIndex) {
                     scheduleDSPAlert();
                 });
 
+                // Evento de clique duplo para mostrar o número da linha
+                slider.addEventListener("dblclick", () => {
+                    const tr = slider.closest("tr");
+                    if (!tr) return;
+
+                    const tbody = tr.parentNode;
+                    const rows = Array.from(tbody.querySelectorAll("tr"));
+
+                    const index = rows.indexOf(tr);
+                    //alert(index);
+                    sendMessage([0xF0,0x4E,index,number-1,0xF7])
+                });
+
                 valueCell.innerHTML = "";
                 valueCell.appendChild(slider);
                 valueCell.appendChild(display);
@@ -2681,6 +2694,19 @@ function createImageTable() {
                 percentage = ((newValue - min) / (max - min)) * 100;
                 miniSlider.style.background = `linear-gradient(to right, ${blue} ${percentage}%, white ${percentage}%)`;
                 scheduleImageAlert();
+            });
+
+            // Evento de clique duplo para mostrar o número da linha
+            miniSlider.addEventListener("dblclick", () => {
+                const tr = miniSlider.closest("tr");
+                if (!tr) return;
+
+                const tbody = tr.parentNode;
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+
+                const index = rows.indexOf(tr);
+                //alert(index+10);
+                sendMessage([0xF0, 0x4E, index+11, 0, 0xF7])
             });
 
             buttonCell.appendChild(miniSlider);
