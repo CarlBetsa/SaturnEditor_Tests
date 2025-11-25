@@ -2143,6 +2143,18 @@ function createIndividualTable(number, currentAlgorithmIndex) {
                         scheduleDSPAlert();
                     });
 
+                    slider.addEventListener("dblclick", () => {
+                        const tr = slider.closest("tr");
+                        if (!tr) return;
+
+                        const tbody = tr.parentNode;
+                        const rows = Array.from(tbody.querySelectorAll("tr"));
+
+                        const index = rows.indexOf(tr);
+                        //alert(index);
+                        sendMessage([0xF0,0x4E,index,number-1,0xF7])
+                    });
+
                     extraValueCell.appendChild(slider);
                     extraValueCell.appendChild(display);
                 }
