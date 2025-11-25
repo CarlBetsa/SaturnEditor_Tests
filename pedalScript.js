@@ -2811,6 +2811,14 @@ function createImageTable() {
             scheduleImageAlert();
         });
 
+        slider.addEventListener("dblclick", () => {
+            const mid = 0;
+            slider.value = mid;
+
+            updateDisplay(mid);
+            scheduleImageAlert();
+        });
+
         displayValue.style.cursor = "default";
         // Centraliza ao clicar no numero
         /*displayValue.addEventListener("click", () => {
